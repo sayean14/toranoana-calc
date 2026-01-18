@@ -1,0 +1,35 @@
+import streamlit as st
+import requests
+from bs4 import BeautifulSoup
+import re
+
+st.set_page_config(page_title="虎之穴代購助手", page_icon="🐯")
+st.title("🐯 虎之穴價格計算器")
+
+url = st.text_input("請貼上商品網址：")
+category = st.selectbox("請選擇分類：", ["分類1：親友計價", "分類2：噗浪客戶", "分類3：蝦皮客戶"])
+
+def calculate(jpy, cat):
+    if cat == "分類1：親友計價":
+        return round(jpy * 0.25) if jpy <= 1000 else round(jpy * 0.26)
+    elif cat == "分類2：噗浪客戶":
+        return round(jpy * 0.30) if jpy <= 1000 else round(jpy * 0.32)
+    elif cat == "分類3：蝦皮客戶":
+        return round(jpy * 0.35) if jpy <= 1000 else round(jpy * 0.38)
+
+if url:
+    try:
+        headers = {"User-Agent": "Mozilla/5.0"}
+        res = requests.get(url, headers=headers)
+        soup = BeautifulSoup(res.text, 'html.parser')
+        # 抓取價格標籤
+        price_tag = soup.select_one(".price-taxin")
+        if price_tag:
+            jpy = int(re.sub(r'[^\d]', '', price_tag.text))
+            tw_price = calculate(jpy, category)
+            st.success(f"日幣價格：{jpy} 円")
+            st.metric("最終台幣金額", f"NT$ {tw_price}")
+        else:
+            st.error("找不到價格，請檢查網址是否為商品頁面。")
+    except:
+        st.error("發生錯誤，請稍後再試。")
