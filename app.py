@@ -52,7 +52,39 @@ if url:
             st.info(f"偵測到商品：{scraped_title}")
 
         # 2. 嘗試抓取價格
-        price_tag = soup.select_
+        price_tag = soup.select_one(".price-taxin") or soup.select_one(".price") or soup.select_one(".detail-price-main")
+        if price_tag:
+            scraped_jpy = int(re.sub(r'[^\d]', '', price_tag.get_text()))
+            st.success(f"✅ 已偵測價格：{scraped_jpy} 円")
+        else:
+            st.warning("⚠️ 價格自動抓取受限（特別是虎之穴），請手動確認。")
+    except:
+        st.error("連線偵測失敗，請手動輸入資訊。")
+
+st.divider()
+
+# --- 使用者確認區 ---
+# 商品名稱輸入框，如果有抓到就預填，沒抓到就空白
+final_title = st.text_input("📦 商品名稱：", value=scraped_title)
+# 日幣金額輸入框
+final_jpy = st.number_input("💰 日幣金額 (含稅)：", min_value=0, value=scraped_jpy)
+
+if final_jpy > 0:
+    tw_price, used_rate = calculate(final_jpy, category)
+    
+    st.markdown(f"### 📢 計算結果")
+    st.success(f"**最終金額：NT$ {tw_price}**")
+    
+    # --- 格式化回覆文字 ---
+    # 這裡幫你把所有資訊拼好，方便你複製
+    reply_text = f"【商品代購回報】\n" \
+                 f"名稱：{final_title if final_title else '未輸入'}\n" \
+                 f"價格：{final_jpy}円 (匯率 {used_rate})\n" \
+                 f"總計：NT$ {tw_price}"
+    
+    st.write("📋 點擊下方按鈕複製回覆文字：")
+    st.code(reply_text, language="text")
+
 
 
 
