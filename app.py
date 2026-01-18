@@ -1,32 +1,53 @@
 import streamlit as st
+import requests
+from bs4 import BeautifulSoup
 import re
 
+# --- 網頁基本設定 ---
 st.set_page_config(page_title="虎之穴代購助手", page_icon="🐯")
+
+# --- 介面頂部：計費規則說明 ---
+with st.expander("📝 檢視計費文字規則 (點擊展開)"):
+    st.markdown("""
+    **分類1：親友計價**
+    - ≦ 1000日幣：日幣 × 0.25
+    - \> 1000日幣：日幣 × 0.26
+
+    **分類2：噗浪客戶**
+    - ≦ 1000日幣：日幣 × 0.30
+    - \> 1000日幣：日幣 × 0.32
+
+    **分類3：蝦皮客戶**
+    - ≦ 1000日幣：日幣 × 0.35
+    - \> 1000日幣：日幣 × 0.38
+    """)
+
 st.title("🐯 虎之穴價格計算器")
 
-# 選單放在最上方
-category = st.selectbox("請選擇客戶分類：", ["分類1：親友計價", "分類2：噗浪客戶", "分類3：蝦皮客戶"])
-
+# --- 計算邏輯函式 ---
 def calculate(jpy, cat):
     if cat == "分類1：親友計價":
-        return round(jpy * 0.25) if jpy <= 1000 else round(jpy * 0.26)
+        rate = 0.25 if jpy <= 1000 else 0.26
     elif cat == "分類2：噗浪客戶":
-        return round(jpy * 0.30) if jpy <= 1000 else round(jpy * 0.32)
+        rate = 0.30 if jpy <= 1000 else 0.32
     elif cat == "分類3：蝦皮客戶":
-        return round(jpy * 0.35) if jpy <= 1000 else round(jpy * 0.38)
+        rate = 0.35 if jpy <= 1000 else 0.38
+    else:
+        rate = 0
+    return round(jpy * rate), rate
 
-# 讓手動輸入變成主要輸入，自動抓取變輔助
-jpy_input = st.number_input("請輸入日幣金額 (含稅)：", min_value=0, step=1, value=0)
+# --- 介面輸入區 ---
+url = st.text_input("🔗 貼上商品網址：", placeholder="https://ec.toranoana.jp/...")
+category = st.selectbox("👤 選擇計算分類：", ["分類1：親友計價", "分類2：噗浪客戶", "分類3：蝦皮客戶"])
 
-if jpy_input > 0:
-    tw_price = calculate(jpy_input, category)
-    st.divider()
-    st.metric(label=f"💰 {category} 台幣總額", value=f"NT$ {tw_price}")
-    st.caption(f"日幣 {jpy_input} × 判定倍率 = 台幣 {tw_price}")
+scraped_jpy = 0
 
-st.divider()
-with st.expander("嘗試自動抓取價格 (實驗性功能)"):
-    st.write("若因年齡牆擋住將無法顯示，請改用上方手動輸入。")
-    # ... 這裡保留你原本的 URL 抓取程式碼 ...
+# --- 執行自動抓取 ---
+if url:
+    try:
+        # 模擬已滿 18 歲的 Cookie
+        cookies = {'age_check': '1', 'is_adult': '1', 'ad_check': '1'}
+        headers = {
+            "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0
 
 
